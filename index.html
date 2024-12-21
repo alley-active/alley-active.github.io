@@ -118,28 +118,13 @@
         </div>
 
         <div class="time-selector">
-            <button class="time-btn active">День</button>
-            <button class="time-btn">Неделя</button>
-            <button class="time-btn">Месяц</button>
+            <button class="time-btn active" data-period="day">День</button>
+            <button class="time-btn" data-period="week">Неделя</button>
+            <button class="time-btn" data-period="month">Месяц</button>
         </div>
 
         <div class="users-list">
             <h2>Топ участников</h2>
-            <div class="user-row">
-                <div class="user-avatar"></div>
-                <div class="user-name">Example User #1</div>
-                <div class="message-count">1234 сообщений</div>
-            </div>
-            <div class="user-row">
-                <div class="user-avatar"></div>
-                <div class="user-name">Example User #2</div>
-                <div class="message-count">987 сообщений</div>
-            </div>
-            <div class="user-row">
-                <div class="user-avatar"></div>
-                <div class="user-name">Example User #3</div>
-                <div class="message-count">754 сообщений</div>
-            </div>
         </div>
 
         <div class="chart-container">
@@ -148,75 +133,54 @@
     </div>
 
     <script>
-        // Создание графика активности
-        const ctx = document.getElementById('activityChart').getContext('2d');
-        const activityChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: Array.from({length: 24}, (_, i) => `${i}:00`),
-                datasets: [{
-                    label: 'Количество сообщений',
-                    data: Array.from({length: 24}, () => Math.floor(Math.random() * 100)),
-                    borderColor: '#7289da',
-                    backgroundColor: 'rgba(114, 137, 218, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: '#ffffff'
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            color: '#ffffff'
-                        },
-                        grid: {
-                            color: 'rgba(255, 255, 255, 0.1)'
-                        }
-                    },
-                    x: {
-                        ticks: {
-                            color: '#ffffff'
-                        },
-                        grid: {
-                            color: 'rgba(255, 255, 255, 0.1)'
-                        }
-                    }
-                }
-            }
-        });
+        const channelId = "1000757048406966426"; // Ваш ID канала
+        const apiBaseUrl = "https://sanatnurasyl90.replit.com"; // URL вашего Replit
 
-        // Обработчики для кнопок временных периодов
+        // Загрузка статистики
+        async function fetchStats(period) {
+            const response = await fetch(`${apiBaseUrl}/stats?channel_id=${channelId}&period=${period}`);
+            if (!response.ok) {
+                console.error("Ошибка загрузки статистики:", await response.text());
+                return null;
+            }
+            return await response.json();
+        }
+
+        // Обновление UI
+        async function updateStats(period) {
+            const data = await fetchStats(period);
+            if (!data) return;
+
+            document.getElementById('total-messages').textContent = data.total_messages;
+            document.getElementById('today-messages').textContent = period === 'day' ? data.total_messages : 'N/A';
+            document.getElementById('active-users').textContent = data.top_users.length;
+
+            const userList = document.querySelector('.users-list');
+            userList.innerHTML = '<h2>Топ участников</h2>';
+            data.top_users.forEach(user => {
+                const userRow = `
+                    <div class="user-row">
+                        <div class="user-avatar"></div>
+                        <div class="user-name">${user.username}</div>
+                        <div class="message-count">${user.message_count} сообщений</div>
+                    </div>
+                `;
+                userList.innerHTML += userRow;
+            });
+        }
+
+        // Обработчики для выбора периода
         document.querySelectorAll('.time-btn').forEach(button => {
-            button.addEventListener('click', function() {
+            button.addEventListener('click', function () {
                 document.querySelectorAll('.time-btn').forEach(btn => btn.classList.remove('active'));
                 this.classList.add('active');
-                // Здесь будет код обновления данных для выбранного периода
+                const period = this.getAttribute('data-period');
+                updateStats(period);
             });
         });
 
-        // Функция для обновления статистики
-        function updateStats(data) {
-            document.getElementById('total-messages').textContent = data.totalMessages;
-            document.getElementById('active-users').textContent = data.activeUsers;
-            document.getElementById('today-messages').textContent = data.todayMessages;
-            document.getElementById('last-update').textContent = new Date().toLocaleString();
-        }
-
-        // Пример данных для тестирования
-        updateStats({
-            totalMessages: 12345,
-            activeUsers: 42,
-            todayMessages: 567
-        });
+        // Инициализация
+        updateStats('day');
     </script>
 </body>
 </html>
