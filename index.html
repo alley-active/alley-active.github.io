@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Статистика Discord чата</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -125,6 +125,7 @@
 
         <div class="users-list">
             <h2>Топ участников</h2>
+            <div id="user-list"></div>
         </div>
 
         <div class="chart-container">
@@ -133,53 +134,74 @@
     </div>
 
     <script>
-        const apiBaseUrl = "https://replit.com/@sanatnurasyl90/GrouchyBitesizedToolbox"; // URL вашего Replit backend
-        const channelId = "1000757048406966426"; // ID канала Discord
+        const apiBaseUrl = "https://145627e4-b4e6-488a-bbd5-9ea40179c93f-00-1tjudbwia8l7p.sisko.replit.dev";
 
-        // Загрузка статистики
         async function fetchStats(period) {
-            const response = await fetch(`${apiBaseUrl}/stats?channel_id=${channelId}&period=${period}`);
-            if (!response.ok) {
-                console.error("Ошибка загрузки статистики:", await response.text());
+            try {
+                const response = await fetch(`${apiBaseUrl}/stats?period=${period}`);
+                if (!response.ok) throw new Error("Failed to fetch stats");
+                return await response.json();
+            } catch (error) {
+                console.error("Error fetching stats:", error);
                 return null;
             }
-            return await response.json();
         }
 
-        // Обновление UI
-        async function updateStats(period) {
-            const data = await fetchStats(period);
-            if (!data) return;
+        function renderStats(data) {
+            document.getElementById('total-messages').textContent = data.total_messages || 0;
+            document.getElementById('today-messages').textContent = data.today_messages || 0;
+            document.getElementById('active-users').textContent = data.active_users || 0;
 
-            document.getElementById('total-messages').textContent = data.total_messages;
-            document.getElementById('today-messages').textContent = period === 'day' ? data.total_messages : 'N/A';
-            document.getElementById('active-users').textContent = data.top_users.length;
-
-            const userList = document.querySelector('.users-list');
-            userList.innerHTML = '<h2>Топ участников</h2>';
+            const userList = document.getElementById('user-list');
+            userList.innerHTML = "";
             data.top_users.forEach(user => {
-                const userRow = `
-                    <div class="user-row">
-                        <div class="user-avatar"></div>
-                        <div class="user-name">${user.username}</div>
-                        <div class="message-count">${user.message_count} сообщений</div>
-                    </div>
+                const userRow = document.createElement('div');
+                userRow.className = 'user-row';
+                userRow.innerHTML = `
+                    <div class="user-avatar"></div>
+                    <div class="user-name">${user.username}</div>
+                    <div class="message-count">${user.message_count} сообщений</div>
                 `;
-                userList.innerHTML += userRow;
+                userList.appendChild(userRow);
             });
         }
 
-        // Обработчики для выбора периода
+        function renderChart(data) {
+            const ctx = document.getElementById('activityChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.activity.map(day => day.date),
+                    datasets: [{
+                        label: 'Сообщения',
+                        data: data.activity.map(day => day.count),
+                        borderColor: '#7289da',
+                        backgroundColor: 'rgba(114, 137, 218, 0.2)',
+                    }],
+                },
+                options: {
+                    responsive: true,
+                },
+            });
+        }
+
+        async function updateStats(period) {
+            const data = await fetchStats(period);
+            if (data) {
+                renderStats(data);
+                renderChart(data);
+            }
+        }
+
         document.querySelectorAll('.time-btn').forEach(button => {
-            button.addEventListener('click', function () {
+            button.addEventListener('click', () => {
                 document.querySelectorAll('.time-btn').forEach(btn => btn.classList.remove('active'));
-                this.classList.add('active');
-                const period = this.getAttribute('data-period');
+                button.classList.add('active');
+                const period = button.getAttribute('data-period');
                 updateStats(period);
             });
         });
 
-        // Инициализация
         updateStats('day');
     </script>
 </body>
