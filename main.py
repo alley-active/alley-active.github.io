@@ -1,9 +1,9 @@
 from fastapi import FastAPI, UploadFile, HTTPException
+from fastapi.responses import FileResponse
 import matplotlib.pyplot as plt
 import pandas as pd
 import os
 import subprocess
-from fastapi.responses import FileResponse
 
 app = FastAPI()
 
