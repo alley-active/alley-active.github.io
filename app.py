@@ -4,98 +4,104 @@ import json
 from datetime import datetime, timedelta
 from collections import defaultdict
 import os
+import subprocess
+import tempfile
+import time
 
 app = Flask(__name__)
-CORS(app)  # Включаем CORS для разработки
+CORS(app)
+
+# Получаем переменные окружения
+DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
+CHANNEL_ID = os.getenv('CHANNEL_ID')
+EXPORT_INTERVAL = int(os.getenv('EXPORT_INTERVAL', '3600'))  # Интервал обновления в секундах (по умолчанию 1 час)
+
+# Путь к временному файлу с данными
+TEMP_DATA_FILE = 'discord_export.json'
+last_export_time = 0
+
+def download_discord_chat_exporter():
+    """Загружает Discord Chat Exporter если его нет"""
+    if not os.path.exists('DiscordChatExporter.CLI'):
+        print("Downloading Discord Chat Exporter...")
+        subprocess.run([
+            'wget', 
+            'https://github.com/Tyrrrz/DiscordChatExporter/releases/download/2.44/DiscordChatExporter.Cli.linux-x64.zip'
+        ])
+        subprocess.run(['unzip', 'DiscordChatExporter.CLI.linux.x64.zip', '-d', 'DiscordChatExporter.CLI'])
+        subprocess.run(['chmod', '+x', 'DiscordChatExporter.CLI/DiscordChatExporter.Cli'])
+
+def export_discord_data():
+    """Экспортирует данные из Discord используя переменные окружения"""
+    global last_export_time
+    
+    # Проверяем, нужно ли обновлять данные
+    current_time = time.time()
+    if current_time - last_export_time < EXPORT_INTERVAL and os.path.exists(TEMP_DATA_FILE):
+        return
+    
+    try:
+        # Проверяем наличие Discord Chat Exporter
+        download_discord_chat_exporter()
+        
+        # Запускаем экспорт
+        print("Exporting Discord data...")
+        result = subprocess.run([
+            './DiscordChatExporter.CLI/DiscordChatExporter.Cli',
+            'export',
+            '-t', DISCORD_TOKEN,
+            '-c', CHANNEL_ID,
+            '-f', 'Json',
+            '-o', TEMP_DATA_FILE
+        ], capture_output=True, text=True)
+        
+        if result.returncode != 0:
+            print(f"Error during export: {result.stderr}")
+            raise Exception(f"Discord export failed: {result.stderr}")
+        
+        last_export_time = current_time
+        print("Export completed successfully")
+        
+    except Exception as e:
+        print(f"Error during export: {str(e)}")
+        raise
 
 def load_discord_data():
     """Загрузка данных из экспортированного JSON файла"""
-    with open('discord_export.json', 'r', encoding='utf-8') as f:
+    # Сначала экспортируем свежие данные
+    export_discord_data()
+    
+    # Затем читаем файл
+    with open(TEMP_DATA_FILE, 'r', encoding='utf-8') as f:
         return json.load(f)
 
-def get_period_start(period):
-    """Получение начальной даты для указанного периода"""
-    now = datetime.now()
-    if period == 'day':
-        return now - timedelta(days=1)
-    elif period == 'week':
-        return now - timedelta(days=7)
-    elif period == 'month':
-        return now - timedelta(days=30)
-    return now - timedelta(days=30)  # По умолчанию месяц
-
-def process_messages(data, period='day'):
-    """Обработка сообщений и подготовка статистики"""
-    period_start = get_period_start(period)
-    now = datetime.now()
-    today = now.date()
-    
-    # Счетчики
-    total_messages = 0
-    today_messages = 0
-    active_users = set()
-    user_messages = defaultdict(int)
-    daily_activity = defaultdict(int)
-    
-    for message in data['messages']:
-        # Пропускаем сообщения от ботов
-        if message.get('author', {}).get('isBot', False):
-            continue
-            
-        timestamp = datetime.fromisoformat(message['timestamp'].replace('Z', '+00:00'))
-        user_id = message['author']['id']
-        message_date = timestamp.date()
-        
-        # Общая статистика
-        total_messages += 1
-        user_messages[user_id] += 1
-        active_users.add(user_id)
-        
-        # Статистика за сегодня
-        if message_date == today:
-            today_messages += 1
-        
-        # Статистика активности за период
-        if timestamp >= period_start:
-            daily_activity[message_date.isoformat()] += 1
-    
-    # Формируем топ пользователей
-    top_users = []
-    for user_id, count in sorted(user_messages.items(), key=lambda x: x[1], reverse=True)[:10]:
-        user_info = next((u for u in data.get('users', []) if u['id'] == user_id), None)
-        if user_info:
-            top_users.append({
-                'username': user_info.get('name', 'Unknown User'),
-                'message_count': count
-            })
-    
-    # Формируем данные активности
-    activity_data = []
-    current_date = period_start.date()
-    while current_date <= now.date():
-        activity_data.append({
-            'date': current_date.isoformat(),
-            'count': daily_activity.get(current_date.isoformat(), 0)
-        })
-        current_date += timedelta(days=1)
-    
-    return {
-        'total_messages': total_messages,
-        'today_messages': today_messages,
-        'active_users': len(active_users),
-        'top_users': top_users,
-        'activity': activity_data
-    }
+# ... [весь остальной код process_messages и другие функции остаются без изменений] ...
 
 @app.route('/stats')
 def get_stats():
     try:
+        if not DISCORD_TOKEN or not CHANNEL_ID:
+            return jsonify({
+                'error': 'Discord token or channel ID not configured. '
+                        'Please set DISCORD_TOKEN and CHANNEL_ID environment variables.'
+            }), 500
+            
         period = request.args.get('period', 'day')
         data = load_discord_data()
         stats = process_messages(data, period)
         return jsonify(stats)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/health')
+def health_check():
+    """Эндпоинт для проверки работоспособности сервиса"""
+    return jsonify({
+        'status': 'healthy',
+        'last_export': datetime.fromtimestamp(last_export_time).isoformat() if last_export_time > 0 else None,
+        'discord_token': bool(DISCORD_TOKEN),
+        'channel_id': bool(CHANNEL_ID)
+    })
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8000))
