@@ -95,238 +95,86 @@
             margin-top: 20px;
         }
         .time-selector {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-bottom: 25px;
-        }
-        .time-btn {
-            background-color: #7289da;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            color: white;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-weight: bold;
-        }
-        .time-btn:hover {
-            background-color: #5b6eae;
-            transform: translateY(-2px);
-        }
-        .time-btn.active {
-            background-color: #5b6eae;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
-        #error-message {
-            display: none;
-            background-color: #f04747;
-            color: white;
-            padding: 15px;
-            border-radius: 5px;
             margin-bottom: 20px;
-            text-align: center;
-            animation: shake 0.5s;
-        }
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-        }
-        .loading {
-            position: relative;
-            opacity: 0.7;
-        }
-        .loading::after {
-            content: "Загрузка...";
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: rgba(0, 0, 0, 0.8);
-            padding: 15px 30px;
-            border-radius: 8px;
-            color: white;
-            font-weight: bold;
-            z-index: 1000;
-        }
-        .refresh-button {
-            background-color: #43b581;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            color: white;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-weight: bold;
-            margin-bottom: 20px;
-        }
-        .refresh-button:hover {
-            background-color: #3ca374;
-            transform: translateY(-2px);
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="stats-header">
-            <h1>Статистика активности Discord</h1>
-            <p>Обновлено: <span id="last-update">Сейчас</span></p>
+            <h1>Статистика Discord чата</h1>
         </div>
-
-        <div id="error-message"></div>
-
         <div class="stats">
             <div class="stat-card">
-                <h3>Всего сообщений</h3>
-                <p id="total-messages">0</p>
+                <h3>Сообщений за сегодня</h3>
+                <p id="messages-today">0</p>
             </div>
             <div class="stat-card">
-                <h3>Активных участников</h3>
-                <p id="active-users">0</p>
+                <h3>Сообщений за неделю</h3>
+                <p id="messages-week">0</p>
             </div>
             <div class="stat-card">
-                <h3>Сообщений сегодня</h3>
-                <p id="today-messages">0</p>
+                <h3>Сообщений за месяц</h3>
+                <p id="messages-month">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>Активные участники</h3>
+                <p id="active-participants">0</p>
             </div>
         </div>
-
-        <div class="time-selector">
-            <button class="time-btn active" data-period="day">День</button>
-            <button class="time-btn" data-period="week">Неделя</button>
-            <button class="time-btn" data-period="month">Месяц</button>
-        </div>
-
-        <button class="refresh-button" onclick="refreshData()">Обновить данные</button>
-
         <div class="users-list">
-            <h2>Топ участников</h2>
-            <div id="user-list"></div>
+            <h2>Топ участников по сообщениям</h2>
+            <div id="top-users">
+                <!-- User rows will be inserted here by JavaScript -->
+            </div>
         </div>
-
         <div class="chart-container">
-            <canvas id="activityChart"></canvas>
+            <canvas id="activity-chart"></canvas>
         </div>
     </div>
-
     <script>
-        let currentChart = null;
-        let currentPeriod = 'day';
-        
-        const baseUrl = window.location.hostname === 'localhost' 
-            ? 'http://localhost:8000' 
-            : 'https://your-railway-url.railway.app';
+        // JavaScript to fetch and display data
+        async function fetchData() {
+            const response = await fetch('https://your-backend-url.com/api/stats');
+            const data = await response.json();
 
-        function showError(message) {
-            const errorElement = document.getElementById('error-message');
-            errorElement.textContent = message;
-            errorElement.style.display = 'block';
-            setTimeout(() => {
-                errorElement.style.display = 'none';
-            }, 5000);
-        }
+            // Update statistics
+            document.getElementById('messages-today').textContent = data.messagesToday;
+            document.getElementById('messages-week').textContent = data.messagesWeek;
+            document.getElementById('messages-month').textContent = data.messagesMonth;
+            document.getElementById('active-participants').textContent = data.activeParticipants;
 
-        function hideError() {
-            document.getElementById('error-message').style.display = 'none';
-        }
-
-        function showLoading() {
-            document.querySelector('.container').classList.add('loading');
-        }
-
-        function hideLoading() {
-            document.querySelector('.container').classList.remove('loading');
-        }
-
-        async function fetchStats(period) {
-            try {
-                showLoading();
-                hideError();
-                
-                const response = await fetch(`${baseUrl}/stats?period=${period}`);
-                if (!response.ok) throw new Error("Ошибка получения данных");
-                
-                const data = await response.json();
-                return data;
-            } catch (error) {
-                showError(`Ошибка: ${error.message}`);
-                return null;
-            } finally {
-                hideLoading();
-            }
-        }
-
-        function renderStats(data) {
-            document.getElementById('total-messages').textContent = data.total_messages.toLocaleString();
-            document.getElementById('active-users').textContent = data.active_users.toLocaleString();
-            document.getElementById('today-messages').textContent = data.today_messages.toLocaleString();
-            document.getElementById('last-update').textContent = new Date().toLocaleString();
-
-            const userList = document.getElementById('user-list');
-            userList.innerHTML = "";
-            
-            data.top_users.forEach((user, index) => {
+            // Update top users
+            const topUsersContainer = document.getElementById('top-users');
+            topUsersContainer.innerHTML = '';
+            data.topUsers.forEach(user => {
                 const userRow = document.createElement('div');
                 userRow.className = 'user-row';
                 userRow.innerHTML = `
-                    <div class="user-avatar" style="background-color: ${getRandomColor()}"></div>
-                    <div class="user-name">${user.username}</div>
-                    <div class="message-count">${user.message_count.toLocaleString()} сообщений</div>
+                    <div class="user-avatar" style="background-image: url(${user.avatar})"></div>
+                    <div class="user-name">${user.name}</div>
+                    <div class="message-count">${user.messageCount}</div>
                 `;
-                userList.appendChild(userRow);
+                topUsersContainer.appendChild(userRow);
             });
-        }
 
-        function getRandomColor() {
-            const colors = ['#7289da', '#43b581', '#faa61a', '#f04747', '#2f3136'];
-            return colors[Math.floor(Math.random() * colors.length)];
-        }
-
-        function renderChart(data) {
-            const ctx = document.getElementById('activityChart').getContext('2d');
-            
-            if (currentChart) {
-                currentChart.destroy();
-            }
-
-            currentChart = new Chart(ctx, {
+            // Update activity chart
+            const ctx = document.getElementById('activity-chart').getContext('2d');
+            new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: data.activity.map(day => new Date(day.date).toLocaleDateString()),
+                    labels: data.chart.labels,
                     datasets: [{
-                        label: 'Сообщения',
-                        data: data.activity.map(day => day.count),
-                        borderColor: '#7289da',
+                        label: 'Активность чата',
+                        data: data.chart.data,
                         backgroundColor: 'rgba(114, 137, 218, 0.2)',
-                        tension: 0.4,
-                        fill: true
+                        borderColor: 'rgba(114, 137, 218, 1)',
+                        borderWidth: 1
                     }]
                 },
                 options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            labels: {
-                                color: '#ffffff'
-                            }
-                        }
-                    },
                     scales: {
-                        x: {
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)'
-                            },
-                            ticks: {
-                                color: '#ffffff'
-                            }
-                        },
                         y: {
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)'
-                            },
-                            ticks: {
-                                color: '#ffffff'
-                            },
                             beginAtZero: true
                         }
                     }
@@ -334,33 +182,8 @@
             });
         }
 
-        async function updateStats(period) {
-            currentPeriod = period;
-            const data = await fetchStats(period);
-            if (data) {
-                renderStats(data);
-                renderChart(data);
-            }
-        }
-
-        async function refreshData() {
-            await updateStats(currentPeriod);
-        }
-
-        document.querySelectorAll('.time-btn').forEach(button => {
-            button.addEventListener('click', () => {
-                document.querySelectorAll('.time-btn').forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
-                const period = button.getAttribute('data-period');
-                updateStats(period);
-            });
-        });
-
-        // Автоматическое обновление данных каждые 5 минут
-        setInterval(refreshData, 300000);
-
-        // Инициализация
-        updateStats('day');
+        // Fetch data on page load
+        fetchData();
     </script>
 </body>
 </html>
