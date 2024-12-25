@@ -1,6 +1,7 @@
-fastapi
-uvicorn
-python-dotenv
-sqlalchemy
-apscheduler
-python-multipart
+fastapi==0.68.0
+uvicorn==0.15.0
+python-dotenv==0.19.0
+sqlalchemy==1.4.23
+apscheduler==3.8.1
+python-multipart==0.0.5
+httpx==0.18.2
