@@ -7,11 +7,7 @@ from fastapi.responses import FileResponse
 
 app = FastAPI()
 
-# Путь к DiscordChatExporter CLI
-dce_path = "./DiscordChatExporter.Cli.exe"  # Убедись, что путь правильный
-
-# Папка для временных файлов
-os.makedirs("temp", exist_ok=True)
+dce_path = "DiscordChatExporter.Cli"  # Убедитесь, что путь к CLI доступен через PATH
 
 @app.post("/export-chat")
 async def export_chat(token: str, channel_id: str):
