@@ -10,13 +10,12 @@ app = FastAPI()
 dce_path = "DiscordChatExporter.Cli"  # Убедитесь, что путь к CLI доступен через PATH
 
 @app.post("/export-chat")
-async def export_chat(token: str, channel_id: str):
+async def export_chat(token: str, channel_id: str = "1000757048406966426"):
     """
     Экспортирует чат из канала Discord и анализирует данные.
     """
     output_file = f"temp/chat_{channel_id}.json"
 
-    # Выполнение команды DiscordChatExporter
     try:
         subprocess.run([
             dce_path,
@@ -30,6 +29,7 @@ async def export_chat(token: str, channel_id: str):
         raise HTTPException(status_code=500, detail=f"Ошибка при экспорте чата: {str(e)}")
 
     return {"message": "Чат успешно экспортирован", "file": output_file}
+
 
 @app.post("/upload-chat")
 async def upload_chat(file: UploadFile):
