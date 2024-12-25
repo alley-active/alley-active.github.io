@@ -1,5 +1,5 @@
 fastapi==0.68.0
-uvicorn==0.15.0
+uvicorn==0.22.0
 python-dotenv==0.19.0
 sqlalchemy==1.4.23
 apscheduler==3.8.1
