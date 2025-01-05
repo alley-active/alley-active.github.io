@@ -31,11 +31,29 @@ jobs:
           unzip DiscordChatExporter.Cli.linux-x64.zip
           chmod +x DiscordChatExporter.Cli
 
-      - name: Run DiscordChatExporter
+      - name: Export Today's Messages
         run: |
-          ./DiscordChatExporter.Cli export -t "${{ secrets.DISCORD_TOKEN }}" --channel 1000757048406966426 -o output -f Json
-          ls -l output # Проверяем, создался ли файл
-          mv output/*.json chat_data.json
+          now=$(date +%s)
+          start_of_day=$(date -d "today" +%s)
+          ./DiscordChatExporter.Cli export -t "${{ secrets.DISCORD_TOKEN }}" --channel 1000757048406966426 -o output -f Json --after "$start_of_day" --before "$now"
+          ls -l output
+          mv output/*.json chat_data_today.json
+
+      - name: Export Week's Messages
+        run: |
+          now=$(date +%s)
+          start_of_week=$(date -d "last week" +%s)
+          ./DiscordChatExporter.Cli export -t "${{ secrets.DISCORD_TOKEN }}" --channel 1000757048406966426 -o output -f Json --after "$start_of_week" --before "$now"
+          ls -l output
+          mv output/*.json chat_data_week.json
+
+      - name: Export Month's Messages
+        run: |
+          now=$(date +%s)
+          start_of_month=$(date -d "first day of this month" +%s)
+          ./DiscordChatExporter.Cli export -t "${{ secrets.DISCORD_TOKEN }}" --channel 1000757048406966426 -o output -f Json --after "$start_of_month" --before "$now"
+          ls -l output
+          mv output/*.json chat_data_month.json
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
