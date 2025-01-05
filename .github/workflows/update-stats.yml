@@ -33,27 +33,33 @@ jobs:
 
       - name: Export Today's Messages
         run: |
-          now=$(date +%s)
-          start_of_day=$(date -d "today" +%s)
+          now=$(date +"%Y-%m-%d %H:%M")
+          start_of_day=$(date -d "today" +"%Y-%m-%d 00:00")
           ./DiscordChatExporter.Cli export -t "${{ secrets.DISCORD_TOKEN }}" --channel 1000757048406966426 -o output -f Json --after "$start_of_day" --before "$now" || true
-          ls -l output
-          mv output/*.json chat_data_today.json || true
+          if [ -d "output" ]; then
+            ls -l output
+            mv output/*.json chat_data_today.json || true
+          fi
 
       - name: Export Week's Messages
         run: |
-          now=$(date +%s)
-          start_of_week=$(date -d "last week" +%s)
+          now=$(date +"%Y-%m-%d %H:%M")
+          start_of_week=$(date -d "last week" +"%Y-%m-%d 00:00")
           ./DiscordChatExporter.Cli export -t "${{ secrets.DISCORD_TOKEN }}" --channel 1000757048406966426 -o output -f Json --after "$start_of_week" --before "$now" || true
-          ls -l output
-          mv output/*.json chat_data_week.json || true
+          if [ -d "output" ]; then
+            ls -l output
+            mv output/*.json chat_data_week.json || true
+          fi
 
       - name: Export Month's Messages
         run: |
-          now=$(date +%s)
-          start_of_month=$(date -d "first day of this month" +%s)
+          now=$(date +"%Y-%m-%d %H:%M")
+          start_of_month=$(date -d "first day of this month" +"%Y-%m-%d 00:00")
           ./DiscordChatExporter.Cli export -t "${{ secrets.DISCORD_TOKEN }}" --channel 1000757048406966426 -o output -f Json --after "$start_of_month" --before "$now" || true
-          ls -l output
-          mv output/*.json chat_data_month.json || true
+          if [ -d "output" ]; then
+            ls -l output
+            mv output/*.json chat_data_month.json || true
+          fi
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
