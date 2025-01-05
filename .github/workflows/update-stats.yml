@@ -12,6 +12,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+      - name: Run DiscordChatExporter (example, if you run it in Actions)
+        run: |
+          dotnet DiscordChatExporter.Cli.exe export -t ${{ secrets.DISCORD_TOKEN }} -g 1000757047891079219 -c 1000757048406966426 -o output -f Html
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
