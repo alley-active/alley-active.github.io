@@ -77,6 +77,8 @@ async function processStats() {
     const chartLabels = ['10:00', '11:00', '12:00', '13:00', '14:00'];
     const chartData = [10, 20, 30, 25, 40];
 
+    const chartImage = await generateChart(chartLabels, chartData);
+
     // Генерация HTML
     const html = `
     <!DOCTYPE html>
@@ -216,7 +218,7 @@ async function processStats() {
                 </div>
             </div>
             <div class="chart-container">
-                <img src="data:image/png;base64,${await generateChart(chartLabels, chartData)}" alt="Activity Chart" />
+                <img src="data:image/png;base64,${chartImage}" alt="Activity Chart" />
             </div>
         </div>
     </body>
