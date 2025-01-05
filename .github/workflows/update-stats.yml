@@ -2,7 +2,7 @@ name: Update Discord Stats
 
 on:
   schedule:
-    - cron: '0 * * * *' # Runs every hour (recommended to avoid rate limits)
+    - cron: '0 * * * *'
   push:
   workflow_dispatch:
 
@@ -16,18 +16,20 @@ jobs:
       - name: Install .NET SDK
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '6.0' # Or a compatible version
+          dotnet-version: '6.0'
 
       - name: Download DiscordChatExporter
         run: |
-          wget https://github.com/Tyrrrz/DiscordChatExporter/releases/latest/download/DiscordChatExporter.Cli.zip
-          unzip DiscordChatExporter.Cli.zip
-          chmod +x DiscordChatExporter.Cli.exe # Make it executable
+          wget https://github.com/Tyrrrz/DiscordChatExporter/releases/latest/download/DiscordChatExporter.Cli.linux-x64.zip
+          unzip DiscordChatExporter.Cli.linux-x64.zip
+          ls -l # Для отладки
+          chmod +x DiscordChatExporter.Cli/DiscordChatExporter.Cli
 
       - name: Run DiscordChatExporter
         run: |
-          ./DiscordChatExporter.Cli.exe export -t ${{ secrets.DISCORD_TOKEN }} -g 1000757047891079219 -c 1000757048406966426 -o output -f Html
-          mv output/*.html exported_chat.html # Move the output to the root and rename
+          ./DiscordChatExporter.Cli/DiscordChatExporter.Cli export -t "${{ secrets.DISCORD_TOKEN }}" -g 1000757047891079219 -c 1000757048406966426 -o output -f Html
+          ls -l output # Проверяем, создался ли файл
+          mv output/*.html exported_chat.html
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
