@@ -2,25 +2,26 @@ name: Update Discord Stats
 
 on:
   schedule:
-    - cron: '*/1 * * * *' # Запускать каждые 2 минуты (ОСТОРОЖНО С ЛИМИТАМИ!)
-  push: # Запускать при каждом пуше (для ручного обновления)
-  workflow_dispatch: # Добавляет кнопку "Run workflow" в интерфейсе GitHub
+    - cron: '*/2 * * * *'
+  push: # Запускать при каждом push
+  workflow_dispatch: # Добавляет кнопку ручного запуска
 
 jobs:
   update-stats:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 16 # или более новая версия
 
       - name: Install dependencies
         run: npm install jsdom chart.js chartjs-node-canvas
 
-      - name: Copy exported HTML (assuming it's already committed)
+      - name: Copy exported HTML (Create exported_chat_example.html in your repo!)
         run: cp exported_chat_example.html exported_chat.html
 
       - name: Run stats processing script
@@ -30,4 +31,5 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: Update Discord stats
-          branch: main
+          branch: main # Или ваша основная ветка
+          commit_options: '--no-gpg-sign' # Отключаем подпись GPG (может вызывать проблемы)
