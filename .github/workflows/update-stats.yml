@@ -6,6 +6,10 @@ on:
   push:
   workflow_dispatch:
 
+concurrency:
+  group: update-stats # Имя группы для параллельных запусков
+  cancel-in-progress: true # Отменять предыдущий запуск, если начинается новый
+
 jobs:
   update-stats:
     runs-on: ubuntu-latest
