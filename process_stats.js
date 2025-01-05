@@ -36,10 +36,15 @@ function processStats() {
     const rawData = fs.readFileSync('chat_data.json', 'utf-8');
     const data = JSON.parse(rawData);
 
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1));
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
     // Анализ сообщений (нужно доработать)
-    const messagesToday = 10;
-    const messagesWeek = 100;
-    const messagesMonth = 500;
+    const messagesToday = data.messages.filter(message => new Date(message.timestamp) >= startOfDay).length;
+    const messagesWeek = data.messages.filter(message => new Date(message.timestamp) >= startOfWeek).length;
+    const messagesMonth = data.messages.filter(message => new Date(message.timestamp) >= startOfMonth).length;
     const activeParticipants = 20;
 
     // Топ пользователи (нужно доработать)
@@ -200,6 +205,17 @@ function processStats() {
     `;
 
     fs.writeFileSync('index.html', html);
+
+    // Проверка конца месяца и сохранение данных (нужно доработать)
+    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    if (now.getDate() === lastDayOfMonth.getDate()) {
+        const monthlyData = {
+            messagesMonth,
+            activeParticipants,
+            topUsers
+        };
+        fs.writeFileSync('monthly_stats.json', JSON.stringify(monthlyData));
+    }
 }
 
 processStats();
