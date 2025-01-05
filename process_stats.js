@@ -32,7 +32,7 @@ async function generateChart(labels, data) {
     return imageBuffer.toString('base64');
 }
 
-function processStats() {
+async function processStats() {
     let dataToday = { messages: [] };
     let dataWeek = { messages: [] };
     let dataMonth = { messages: [] };
