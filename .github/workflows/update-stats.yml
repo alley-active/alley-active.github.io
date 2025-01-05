@@ -1,0 +1,33 @@
+name: Update Discord Stats
+
+on:
+  schedule:
+    - cron: '*/10 * * * *' # Запускать каждые 2 минуты (ОСТОРОЖНО С ЛИМИТАМИ!)
+  push: # Запускать при каждом пуше (для ручного обновления)
+  workflow_dispatch: # Добавляет кнопку "Run workflow" в интерфейсе GitHub
+
+jobs:
+  update-stats:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Install dependencies
+        run: npm install jsdom chart.js chartjs-node-canvas
+
+      - name: Copy exported HTML (assuming it's already committed)
+        run: cp exported_chat_example.html exported_chat.html
+
+      - name: Run stats processing script
+        run: node process_stats.js
+
+      - name: Commit and push changes
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Update Discord stats
+          branch: main
