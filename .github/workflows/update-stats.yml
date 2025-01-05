@@ -7,8 +7,8 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: update-stats # Имя группы для параллельных запусков
-  cancel-in-progress: true # Отменять предыдущий запуск, если начинается новый
+  group: update-stats
+  cancel-in-progress: true
 
 jobs:
   update-stats:
@@ -33,9 +33,9 @@ jobs:
 
       - name: Run DiscordChatExporter
         run: |
-          ./DiscordChatExporter.Cli export -t "${{ secrets.DISCORD_TOKEN }}" --channel 1000757048406966426 -o output -f HtmlDark
+          ./DiscordChatExporter.Cli export -t "${{ secrets.DISCORD_TOKEN }}" --channel 1000757048406966426 -o output -f Json
           ls -l output # Проверяем, создался ли файл
-          mv output/*.html exported_chat.html
+          mv output/*.json chat_data.json
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
