@@ -29,7 +29,7 @@ jobs:
 
       - name: Run DiscordChatExporter
         run: |
-          ./DiscordChatExporter.Cli export -t "${{ secrets.DISCORD_TOKEN }}" --guild 1000757047891079219 --channel 1000757048406966426 -o output -f HtmlDark
+          ./DiscordChatExporter.Cli export -t "${{ secrets.DISCORD_TOKEN }}" --channel 1000757048406966426 -o output -f HtmlDark
           ls -l output # Проверяем, создался ли файл
           mv output/*.html exported_chat.html
 
