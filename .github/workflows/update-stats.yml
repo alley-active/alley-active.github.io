@@ -10,6 +10,9 @@ jobs:
   update-stats:
     runs-on: ubuntu-latest
     steps:
+      - name: Clear Actions Cache
+        run: rm -rf _actions
+
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -22,7 +25,7 @@ jobs:
         run: |
           wget https://github.com/Tyrrrz/DiscordChatExporter/releases/download/2.44/DiscordChatExporter.Cli.linux-x64.zip
           unzip DiscordChatExporter.Cli.linux-x64.zip
-          ls -l DiscordChatExporter.Cli # Для отладки, проверяем содержимое
+          ls -l DiscordChatExporter.Cli # Проверяем содержимое папки
           chmod +x DiscordChatExporter.Cli/DiscordChatExporter.Cli
 
       - name: Run DiscordChatExporter
