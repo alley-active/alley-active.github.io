@@ -12,6 +12,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        
+      - name: Verify .NET SDK Installation
+        run: dotnet --version
+        if: failure()  # Only run this step if previous steps fail
 
       - name: Install .NET SDK
         uses: actions/setup-dotnet@v3
