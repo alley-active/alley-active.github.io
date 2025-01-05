@@ -2,7 +2,7 @@ name: Update Discord Stats
 
 on:
   schedule:
-    - cron: '0 * * * *'
+    - cron: '0 * * * *' # Runs every hour (recommended to avoid rate limits)
   push:
   workflow_dispatch:
 
@@ -12,21 +12,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-        
-      - name: Verify .NET SDK Installation
-        run: dotnet --version
-        if: failure()  # Only run this step if previous steps fail
 
       - name: Install .NET SDK
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '6.0'
+          dotnet-version: '6.0' # Or a compatible version
 
       - name: Download DiscordChatExporter
         run: |
-          wget https://github.com/Tyrrrz/DiscordChatExporter/releases/latest/download/DiscordChatExporter.Cli.linux-x64.zip
+          wget https://github.com/Tyrrrz/DiscordChatExporter/releases/download/v2.44/DiscordChatExporter.Cli.linux-x64.zip
           unzip DiscordChatExporter.Cli.linux-x64.zip
-          ls -l # Для отладки
+          ls -l DiscordChatExporter.Cli # Для отладки, проверяем содержимое
           chmod +x DiscordChatExporter.Cli/DiscordChatExporter.Cli
 
       - name: Run DiscordChatExporter
