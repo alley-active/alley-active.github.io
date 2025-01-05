@@ -33,14 +33,29 @@ async function generateChart(labels, data) {
 }
 
 function processStats() {
-    const rawDataToday = fs.readFileSync('chat_data_today.json', 'utf-8');
-    const dataToday = JSON.parse(rawDataToday);
+    let dataToday = { messages: [] };
+    let dataWeek = { messages: [] };
+    let dataMonth = { messages: [] };
 
-    const rawDataWeek = fs.readFileSync('chat_data_week.json', 'utf-8');
-    const dataWeek = JSON.parse(rawDataWeek);
+    if (fs.existsSync('chat_data_today.json')) {
+        const rawDataToday = fs.readFileSync('chat_data_today.json', 'utf-8');
+        dataToday = JSON.parse(rawDataToday);
+    }
 
-    const rawDataMonth = fs.readFileSync('chat_data_month.json', 'utf-8');
-    const dataMonth = JSON.parse(rawDataMonth);
+    if (fs.existsSync('chat_data_week.json')) {
+        const rawDataWeek = fs.readFileSync('chat_data_week.json', 'utf-8');
+        dataWeek = JSON.parse(rawDataWeek);
+    }
+
+    if (fs.existsSync('chat_data_month.json')) {
+        const rawDataMonth = fs.readFileSync('chat_data_month.json', 'utf-8');
+        dataMonth = JSON.parse(rawDataMonth);
+    }
+
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1));
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
     // Анализ сообщений
     const messagesToday = dataToday.messages.length;
@@ -48,7 +63,8 @@ function processStats() {
     const messagesMonth = dataMonth.messages.length;
     
     // Подсчет активных участников (нужно доработать)
-    const activeParticipants = new Set([...dataToday.messages, ...dataWeek.messages, ...dataMonth.messages].map(message => message.author.id)).size;
+    const allMessages = [...dataToday.messages, ...dataWeek.messages, ...dataMonth.messages];
+    const activeParticipants = new Set(allMessages.map(message => message.author.id)).size;
 
     // Топ пользователи (нужно доработать)
     const topUsers = [
@@ -210,7 +226,6 @@ function processStats() {
     fs.writeFileSync('index.html', html);
 
     // Проверка конца месяца и сохранение данных (нужно доработать)
-    const now = new Date();
     const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     if (now.getDate() === lastDayOfMonth.getDate()) {
         const monthlyData = {
