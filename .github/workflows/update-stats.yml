@@ -54,7 +54,7 @@ jobs:
       - name: Export Month's Messages
         run: |
           now=$(date +"%Y-%m-%d %H:%M")
-          start_of_month=$(date -d "first day of this month" +"%Y-%m-%d 00:00")
+          start_of_month=$(date -d "$(date +%Y-%m-01) 00:00" +"%Y-%m-%d %H:%M")
           ./DiscordChatExporter.Cli export -t "${{ secrets.DISCORD_TOKEN }}" --channel 1000757048406966426 -o output -f Json --after "$start_of_month" --before "$now" || true
           if [ -d "output" ]; then
             ls -l output
