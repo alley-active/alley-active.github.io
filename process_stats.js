@@ -33,19 +33,22 @@ async function generateChart(labels, data) {
 }
 
 function processStats() {
-    const rawData = fs.readFileSync('chat_data.json', 'utf-8');
-    const data = JSON.parse(rawData);
+    const rawDataToday = fs.readFileSync('chat_data_today.json', 'utf-8');
+    const dataToday = JSON.parse(rawDataToday);
 
-    const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1));
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const rawDataWeek = fs.readFileSync('chat_data_week.json', 'utf-8');
+    const dataWeek = JSON.parse(rawDataWeek);
 
-    // Анализ сообщений (нужно доработать)
-    const messagesToday = data.messages.filter(message => new Date(message.timestamp) >= startOfDay).length;
-    const messagesWeek = data.messages.filter(message => new Date(message.timestamp) >= startOfWeek).length;
-    const messagesMonth = data.messages.filter(message => new Date(message.timestamp) >= startOfMonth).length;
-    const activeParticipants = 20;
+    const rawDataMonth = fs.readFileSync('chat_data_month.json', 'utf-8');
+    const dataMonth = JSON.parse(rawDataMonth);
+
+    // Анализ сообщений
+    const messagesToday = dataToday.messages.length;
+    const messagesWeek = dataWeek.messages.length;
+    const messagesMonth = dataMonth.messages.length;
+    
+    // Подсчет активных участников (нужно доработать)
+    const activeParticipants = new Set([...dataToday.messages, ...dataWeek.messages, ...dataMonth.messages].map(message => message.author.id)).size;
 
     // Топ пользователи (нужно доработать)
     const topUsers = [
@@ -207,6 +210,7 @@ function processStats() {
     fs.writeFileSync('index.html', html);
 
     // Проверка конца месяца и сохранение данных (нужно доработать)
+    const now = new Date();
     const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     if (now.getDate() === lastDayOfMonth.getDate()) {
         const monthlyData = {
