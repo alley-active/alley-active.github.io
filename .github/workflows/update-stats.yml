@@ -78,4 +78,4 @@ jobs:
           commit_message: Update Discord stats
           branch: main
           commit_options: '--no-gpg-sign'
-          repository: . # Используем текущую директорию
+          repository: ${{ github.repository }} # Используем GITHUB_TOKEN
