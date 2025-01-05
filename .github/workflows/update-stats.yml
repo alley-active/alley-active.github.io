@@ -2,9 +2,9 @@ name: Update Discord Stats
 
 on:
   schedule:
-    - cron: '*/2 * * * *'
-  push: # Запускать при каждом push
-  workflow_dispatch: # Добавляет кнопку ручного запуска
+    - cron: '0 * * * *' # Runs every hour (recommended to avoid rate limits)
+  push:
+  workflow_dispatch:
 
 jobs:
   update-stats:
@@ -12,20 +12,30 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      - name: Run DiscordChatExporter (example, if you run it in Actions)
+
+      - name: Install .NET SDK
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '6.0' # Or a compatible version
+
+      - name: Download DiscordChatExporter
         run: |
-          dotnet DiscordChatExporter.Cli.exe export -t ${{ secrets.DISCORD_TOKEN }} -g 1000757047891079219 -c 1000757048406966426 -o output -f Html
+          wget https://github.com/Tyrrrz/DiscordChatExporter/releases/latest/download/DiscordChatExporter.Cli.zip
+          unzip DiscordChatExporter.Cli.zip
+          chmod +x DiscordChatExporter.Cli.exe # Make it executable
+
+      - name: Run DiscordChatExporter
+        run: |
+          ./DiscordChatExporter.Cli.exe export -t ${{ secrets.DISCORD_TOKEN }} -g 1000757047891079219 -c 1000757048406966426 -o output -f Html
+          mv output/*.html exported_chat.html # Move the output to the root and rename
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 16 # или более новая версия
+          node-version: 16
 
       - name: Install dependencies
         run: npm install jsdom chart.js chartjs-node-canvas
-
-      - name: Copy exported HTML (Create exported_chat_example.html in your repo!)
-        run: cp exported_chat_example.html exported_chat.html
 
       - name: Run stats processing script
         run: node process_stats.js
@@ -34,5 +44,5 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: Update Discord stats
-          branch: main # Или ваша основная ветка
-          commit_options: '--no-gpg-sign' # Отключаем подпись GPG (может вызывать проблемы)
+          branch: main
+          commit_options: '--no-gpg-sign'
