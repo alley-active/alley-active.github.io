@@ -1,0 +1,23 @@
+{
+  "name": "aibot-discord",
+  "version": "1.0.0",
+  "description": "Discord AI бот с использованием discord.js-selfbot-v13",
+  "main": "aibot.js",
+  "scripts": {
+    "start": "node aibot.js",
+    "dev": "nodemon aibot.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.7",
+    "axios": "^1.6.7",
+    "discord.js-selfbot-v13": "latest",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=16.x"
+  },
+  "private": true
+} 
