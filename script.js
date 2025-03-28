@@ -2,7 +2,7 @@
 const SUPABASE_URL = 'https://cophprhpchscjckyipin.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNvcGhwcmhwY2hzY2pja3lpcGluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDExMDk5MDksImV4cCI6MjA1NjY4NTkwOX0.CFJC8wvbdVzfgxnSkG-ZErQWOYkKvTIeP1nlNAWyJvU'; // Публичный ключ (anon/public)
 const CHANNEL_ID = '1000757048406966426';
-const CHANNEL_NAME = 'основной чат';
+const CHANNEL_NAME = '꒰💬꒱₊⊹основной-чат';
 
 // Устанавливаем название канала
 document.getElementById('channel-name').textContent = CHANNEL_NAME;
