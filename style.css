@@ -189,6 +189,10 @@ h1 {
     background-color: var(--month-color);
 }
 
+.stats-card.all-time::before {
+    background-color: #ED4245; /* Красный цвет Discord для выделения */
+}
+
 .count {
     font-size: 3rem;
     font-weight: 700;
@@ -420,4 +424,11 @@ footer {
 
 .stats-card:hover::after {
     opacity: 1;
+}
+
+/* Обновим сетку для отображения 5 карточек */
+@media (min-width: 1200px) {
+    .stats-container {
+        grid-template-columns: repeat(5, 1fr);
+    }
 } 
