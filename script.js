@@ -354,26 +354,38 @@ async function fetchTopUser() {
     const topUserContainer = document.getElementById('top-user-info');
     if (!topUserContainer) return;
 
-    topUserContainer.innerHTML = '<div class="loader"></div>'; 
+    topUserContainer.innerHTML = '<div class="loader"></div>';
+    
+    const channelId = 1000757048406966426;
 
     try {
-        const response = await fetch(`/api/most_active_user`);
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ message: 'Ошибка при запросе к API' }));
-            throw new Error(`Ошибка: ${response.status} ${response.statusText}. ${errorData.error || errorData.message}`);
+        const { data, error } = await supabaseClient
+            .rpc('get_stored_top_chatter_id_count', { p_channel_id: channelId });
+        
+        if (error) {
+            throw new Error(`Ошибка Supabase RPC: ${error.message}`);
         }
-        const userData = await response.json();
-
-        if (userData && userData.name && userData.count !== undefined) {
-            topUserContainer.innerHTML = `
-                <span class="user-name">${userData.name}</span>
-                <span class="user-messages">(${formatNumber(userData.count)} сообщ.)</span>
-            `;
-        } else {
-            // Если есть сообщение от API (например, "Активных пользователей сегодня не найдено"), используем его
-            // иначе, стандартное "Нет данных"
-            topUserContainer.textContent = userData.message || 'Нет данных';
+        
+        if (!data || data.length === 0) {
+            topUserContainer.textContent = 'Активных пользователей сегодня не найдено';
+            return;
         }
+        
+        const topUser = data[0];
+        const userId = topUser.author_id;
+        const messageCount = topUser.message_count;
+        
+        if (!userId || messageCount === undefined) {
+            topUserContainer.textContent = 'Неполные данные о пользователе';
+            return;
+        }
+        
+        const userName = topUser.author_name || `Пользователь ${userId}`;
+        
+        topUserContainer.innerHTML = `
+            <span class="user-name">${userName}</span>
+            <span class="user-messages">(${formatNumber(messageCount)} сообщ.)</span>
+        `;
     } catch (error) {
         console.error('Ошибка при загрузке самого активного пользователя:', error);
         topUserContainer.textContent = 'Ошибка загрузки';
