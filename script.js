@@ -1,6 +1,5 @@
 const SUPABASE_URL = 'https://cophprhpchscjckyipin.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNvcGhwcmhwY2hzY2pja3lpcGluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDExMDk5MDksImV4cCI6MjA1NjY4NTkwOX0.CFJC8wvbdVzfgxnSkG-ZErQWOYkKvTIeP1nlNAWyJvU';
-const CHANNEL_ID = '1000757048406966426';
 
 let supabaseClient;
 
@@ -55,7 +54,6 @@ async function fetchChartData() {
         let { data: weekData, error: weekError } = await supabaseClient
             .from('message_stats_daily')
             .select('date, count')
-            .eq('channel_id', CHANNEL_ID)
             .order('date', { ascending: false })
             .limit(7);
             
@@ -78,7 +76,6 @@ async function fetchChartData() {
         let { data: monthData, error: monthError } = await supabaseClient
             .from('message_stats_daily')
             .select('date, count')
-            .eq('channel_id', CHANNEL_ID)
             .order('date', { ascending: false })
             .limit(30);
             
@@ -309,7 +306,6 @@ async function fetchMessageCounts() {
         const { data, error } = await supabaseClient
             .from('message_counts')
             .select('*')
-            .eq('channel_id', CHANNEL_ID)
             .single();
             
         if (error) {
@@ -374,7 +370,9 @@ async function fetchTopUser() {
                 <span class="user-messages">(${formatNumber(userData.count)} сообщ.)</span>
             `;
         } else {
-            topUserContainer.textContent = 'Нет данных';
+            // Если есть сообщение от API (например, "Активных пользователей сегодня не найдено"), используем его
+            // иначе, стандартное "Нет данных"
+            topUserContainer.textContent = userData.message || 'Нет данных';
         }
     } catch (error) {
         console.error('Ошибка при загрузке самого активного пользователя:', error);
