@@ -73,19 +73,17 @@
         </div>
 
         <footer class="fade-in">
-            <p>Создатель: rocker7003 | Данные обновляются каждую ~1 минуту | ID канала: 1000757048406966426</p>
+            <p>Создатель: rocker7003 | Данные обновляются когда бот включен</p>
         </footer>
     </div>
 
     <script>
-        // Код для переключения темы
         document.addEventListener('DOMContentLoaded', function() {
             const themeToggle = document.querySelector('.theme-toggle');
             const lightIcon = document.querySelector('.light-icon');
             const darkIcon = document.querySelector('.dark-icon');
             const html = document.documentElement;
-            
-            // Проверяем сохраненную тему в localStorage
+
             const savedTheme = localStorage.getItem('theme');
             if (savedTheme) {
                 html.setAttribute('data-theme', savedTheme);
@@ -110,11 +108,9 @@
                     darkIcon.style.display = 'none';
                 }
             }
-            
-            // Анимация появления при прокрутке
+
             const fadeElements = document.querySelectorAll('.fade-in');
             
-            // Функция для проверки, виден ли элемент
             function isElementInViewport(el) {
                 const rect = el.getBoundingClientRect();
                 return (
@@ -122,7 +118,6 @@
                 );
             }
             
-            // Функция для добавления класса 'visible' видимым элементам
             function checkElements() {
                 fadeElements.forEach(element => {
                     if (isElementInViewport(element)) {
@@ -131,10 +126,8 @@
                 });
             }
             
-            // Проверяем элементы при загрузке страницы
             checkElements();
             
-            // Проверяем элементы при прокрутке
             window.addEventListener('scroll', checkElements);
         });
     </script>
