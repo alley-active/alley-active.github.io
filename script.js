@@ -1,18 +1,12 @@
 const SUPABASE_URL = 'https://cophprhpchscjckyipin.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNvcGhwcmhwY2hzY2pja3lpcGluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDExMDk5MDksImV4cCI6MjA1NjY4NTkwOX0.CFJC8wvbdVzfgxnSkG-ZErQWOYkKvTIeP1nlNAWyJvU';
+const TARGET_SERVER_ID = '1000757047891079219';
 
 let supabaseClient;
-
 let activityChart = null;
 let chartData = {
-    week: {
-        labels: [],
-        data: []
-    },
-    month: {
-        labels: [],
-        data: []
-    }
+    week: { labels: [], data: [] },
+    month: { labels: [], data: [] }
 };
 let currentChartPeriod = 'week';
 
@@ -22,7 +16,6 @@ function getCurrentTheme() {
 
 function getThemeColors() {
     const isDarkTheme = getCurrentTheme() === 'dark';
-    
     return {
         primary: isDarkTheme ? '#7983f5' : '#5865F2',
         textColor: isDarkTheme ? '#ECEFF4' : '#2E3440',
@@ -38,114 +31,87 @@ function formatNumber(num) {
 
 function formatDateTime(isoString) {
     if (!isoString) return 'Н/Д';
-    
     const date = new Date(isoString);
     return new Intl.DateTimeFormat('ru-RU', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
     }).format(date);
 }
 
 async function fetchChartData() {
     try {
+        // --- ИЗМЕНЕНО: Добавлен фильтр .eq('server_id', TARGET_SERVER_ID) ---
         let { data: weekData, error: weekError } = await supabaseClient
             .from('message_stats_daily')
             .select('date, count')
+            .eq('server_id', TARGET_SERVER_ID) // Фильтр по ID сервера
             .order('date', { ascending: false })
             .limit(7);
-            
-        if (weekError) {
-            console.error('Ошибка при получении недельных данных:', weekError);
-            return;
-        }
-        
+
+        if (weekError) throw weekError;
+
         if (weekData && weekData.length > 0) {
-            weekData.reverse(); 
-            
-            chartData.week.labels = weekData.map(item => {
-                const date = new Date(item.date);
-                return new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short' }).format(date);
-            });
-            
+            weekData.reverse();
+            chartData.week.labels = weekData.map(item => new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short' }).format(new Date(item.date)));
             chartData.week.data = weekData.map(item => item.count || 0);
         }
-        
+
+        // --- ИЗМЕНЕНО: Добавлен фильтр .eq('server_id', TARGET_SERVER_ID) ---
         let { data: monthData, error: monthError } = await supabaseClient
             .from('message_stats_daily')
             .select('date, count')
+            .eq('server_id', TARGET_SERVER_ID) // Фильтр по ID сервера
             .order('date', { ascending: false })
             .limit(30);
-            
-        if (monthError) {
-            console.error('Ошибка при получении месячных данных:', monthError);
-            return;
-        }
-        
+
+        if (monthError) throw monthError;
+
         if (monthData && monthData.length > 0) {
-            monthData.reverse(); 
-            
-            chartData.month.labels = monthData.map(item => {
-                const date = new Date(item.date);
-                return new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short' }).format(date);
-            });
-            
+            monthData.reverse();
+            chartData.month.labels = monthData.map(item => new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short' }).format(new Date(item.date)));
             chartData.month.data = monthData.map(item => item.count || 0);
         }
-        
+
         if (!weekData || weekData.length === 0) {
+            console.log("Данных для графика нет, генерирую демо-данные.");
             generateDemoData();
         }
-        
+
         updateChart();
-        
+
     } catch (err) {
         console.error('Ошибка при получении данных для графика:', err);
-        generateDemoData(); 
+        generateDemoData();
         updateChart();
     }
 }
 
 function generateDemoData() {
+    const today = new Date();
     chartData.week.labels = [];
     chartData.week.data = [];
-    
-    const today = new Date();
-    
     for (let i = 6; i >= 0; i--) {
         const date = new Date(today);
         date.setDate(date.getDate() - i);
-        
         chartData.week.labels.push(new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short' }).format(date));
-        chartData.week.data.push(Math.floor(Math.random() * 100) + 20); 
+        chartData.week.data.push(Math.floor(Math.random() * 100) + 20);
     }
-    
     chartData.month.labels = [];
     chartData.month.data = [];
-    
     for (let i = 29; i >= 0; i--) {
         const date = new Date(today);
         date.setDate(date.getDate() - i);
-        
         chartData.month.labels.push(new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short' }).format(date));
-        chartData.month.data.push(Math.floor(Math.random() * 100) + 20); 
+        chartData.month.data.push(Math.floor(Math.random() * 100) + 20);
     }
 }
 
 function updateChart() {
     const ctx = document.getElementById('activity-chart').getContext('2d');
     const colors = getThemeColors();
-    
-    if (activityChart) {
-        activityChart.destroy();
-    }
-    
+    if (activityChart) activityChart.destroy();
     const data = chartData[currentChartPeriod];
-    
     const maxValue = Math.max(...data.data);
-    
     activityChart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -169,73 +135,34 @@ function updateChart() {
             }]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: {
-                duration: 2000,
-                easing: 'easeOutQuart'
-            },
-            interaction: {
-                mode: 'nearest',
-                axis: 'x',
-                intersect: false
-            },
+            responsive: true, maintainAspectRatio: false,
+            animation: { duration: 2000, easing: 'easeOutQuart' },
+            interaction: { mode: 'nearest', axis: 'x', intersect: false },
             plugins: {
-                legend: {
-                    display: false
-                },
+                legend: { display: false },
                 tooltip: {
                     backgroundColor: colors.tooltipBackground,
-                    titleFont: {
-                        family: 'Montserrat',
-                        size: 14,
-                        weight: 'bold'
-                    },
-                    bodyFont: {
-                        family: 'Montserrat',
-                        size: 13
-                    },
-                    padding: 12,
-                    displayColors: false,
-                    callbacks: {
-                        label: function(context) {
-                            return `Сообщений: ${formatNumber(context.raw)}`;
-                        }
-                    }
+                    titleFont: { family: 'Montserrat', size: 14, weight: 'bold' },
+                    bodyFont: { family: 'Montserrat', size: 13 },
+                    padding: 12, displayColors: false,
+                    callbacks: { label: context => `Сообщений: ${formatNumber(context.raw)}` }
                 }
             },
             scales: {
                 y: {
-                    beginAtZero: true,
-                    suggestedMax: maxValue * 1.1, 
-                    grid: {
-                        color: colors.gridColor,
-                        drawBorder: false
-                    },
+                    beginAtZero: true, suggestedMax: maxValue * 1.1,
+                    grid: { color: colors.gridColor, drawBorder: false },
                     ticks: {
-                        font: {
-                            family: 'Montserrat',
-                            size: 11
-                        },
-                        color: colors.textColor,
-                        padding: 10,
-                        callback: function(value) {
-                            return formatNumber(value);
-                        }
+                        font: { family: 'Montserrat', size: 11 },
+                        color: colors.textColor, padding: 10,
+                        callback: value => formatNumber(value)
                     }
                 },
                 x: {
-                    grid: {
-                        display: false,
-                        drawBorder: false
-                    },
+                    grid: { display: false, drawBorder: false },
                     ticks: {
-                        font: {
-                            family: 'Montserrat',
-                            size: 11
-                        },
-                        color: colors.textColor,
-                        padding: 10
+                        font: { family: 'Montserrat', size: 11 },
+                        color: colors.textColor, padding: 10
                     }
                 }
             }
@@ -245,77 +172,50 @@ function updateChart() {
 
 function updateCounters(data) {
     if (!data) {
-        document.getElementById('count-today').textContent = 'Ошибка загрузки';
-        document.getElementById('count-yesterday').textContent = 'Ошибка загрузки';
-        document.getElementById('count-week').textContent = 'Ошибка загрузки';
-        document.getElementById('count-month').textContent = 'Ошибка загрузки';
-        document.getElementById('last-update-time').textContent = 'Ошибка загрузки';
+        ['count-today', 'count-yesterday', 'count-week', 'count-month', 'last-update-time'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = 'Ошибка';
+        });
         return;
     }
-    
     function animateValue(element, start, end, duration) {
         let startTimestamp = null;
         const step = (timestamp) => {
             if (!startTimestamp) startTimestamp = timestamp;
             const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-            const currentValue = Math.floor(progress * (end - start) + start);
-            element.textContent = formatNumber(currentValue);
-            if (progress < 1) {
-                window.requestAnimationFrame(step);
-            } else {
-                element.classList.add('updated');
-                setTimeout(() => {
-                    element.classList.remove('updated');
-                }, 1000);
-            }
+            element.textContent = formatNumber(Math.floor(progress * (end - start) + start));
+            if (progress < 1) window.requestAnimationFrame(step);
         };
         window.requestAnimationFrame(step);
     }
-    
-    const todayElement = document.getElementById('count-today');
-    const yesterdayElement = document.getElementById('count-yesterday');
-    const weekElement = document.getElementById('count-week');
-    const monthElement = document.getElementById('count-month');
-    
-    todayElement.innerHTML = '0';
-    yesterdayElement.innerHTML = '0';
-    weekElement.innerHTML = '0';
-    monthElement.innerHTML = '0';
-    
-    setTimeout(() => {
-        animateValue(todayElement, 0, data.count_today || 0, 1500);
-    }, 100);
-    
-    setTimeout(() => {
-        animateValue(yesterdayElement, 0, data.count_yesterday || 0, 1500);
-    }, 300);
-    
-    setTimeout(() => {
-        animateValue(weekElement, 0, data.count_week || 0, 1500);
-    }, 500);
-    
-    setTimeout(() => {
-        animateValue(monthElement, 0, data.count_month || 0, 1500);
-    }, 700);
-    
+    const elements = {
+        'count-today': data.count_today || 0,
+        'count-yesterday': data.count_yesterday || 0,
+        'count-week': data.count_week || 0,
+        'count-month': data.count_month || 0
+    };
+    Object.entries(elements).forEach(([id, value], index) => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.innerHTML = '0';
+            setTimeout(() => animateValue(el, 0, value, 1500), 100 + index * 200);
+        }
+    });
     document.getElementById('last-update-time').textContent = formatDateTime(data.last_updated);
 }
 
 async function fetchMessageCounts() {
     try {
+        // --- ИЗМЕНЕНО: Добавлен фильтр .eq() и .single() для получения одной записи ---
         const { data, error } = await supabaseClient
             .from('message_counts')
             .select('*')
-            .single();
-            
-        if (error) {
-            console.error('Ошибка при получении данных:', error);
-            updateCounters(null);
-            return;
-        }
-        
+            .eq('server_id', TARGET_SERVER_ID) // Фильтруем по ID сервера
+            .single(); // Указываем, что ожидаем только одну запись
+
+        if (error) throw error;
         updateCounters(data);
-        
+
     } catch (err) {
         console.error('Ошибка при получении данных из Supabase:', err);
         updateCounters(null);
@@ -324,7 +224,6 @@ async function fetchMessageCounts() {
 
 function setupChartTabs() {
     const tabs = document.querySelectorAll('.chart-tab');
-    
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
             tabs.forEach(t => t.classList.remove('active'));
@@ -336,44 +235,33 @@ function setupChartTabs() {
 }
 
 function setupThemeChangeListener() {
-    const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-            if (mutation.attributeName === 'data-theme') {
-                updateChart();
-            }
+    const observer = new MutationObserver(mutations => {
+        mutations.forEach(mutation => {
+            if (mutation.attributeName === 'data-theme') updateChart();
         });
     });
-    
-    observer.observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ['data-theme']
-    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    if (!SUPABASE_URL || !SUPABASE_ANON_KEY || SUPABASE_URL.includes('ВАША_ССЫЛКА')) {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY || SUPABASE_URL.includes('ВАШ')) {
         const message = 'Необходимо указать URL и ключ Supabase в файле script.js';
         alert(message);
         document.querySelector('.container').innerHTML = `<div class="error">${message}</div>`;
         return;
     }
-    
     try {
         supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        
         setupChartTabs();
         setupThemeChangeListener();
-        
         fetchMessageCounts();
         fetchChartData();
-        
         setInterval(() => {
             fetchMessageCounts();
             fetchChartData();
-        }, 5 * 60 * 1000);
+        }, 5 * 60 * 1000); // Обновление каждые 5 минут
     } catch (err) {
         console.error('Ошибка при инициализации Supabase:', err);
-        document.querySelector('.container').innerHTML = 
-            `<div class="error">Ошибка при подключении к базе данных. Пожалуйста, проверьте консоль.</div>`;
+        document.querySelector('.container').innerHTML = `<div class="error">Ошибка при подключении к базе данных.</div>`;
     }
 });
