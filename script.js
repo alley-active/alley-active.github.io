@@ -40,11 +40,10 @@ function formatDateTime(isoString) {
 
 async function fetchChartData() {
     try {
-        // --- ИЗМЕНЕНО: Добавлен фильтр .eq('server_id', TARGET_SERVER_ID) ---
         let { data: weekData, error: weekError } = await supabaseClient
             .from('message_stats_daily')
             .select('date, count')
-            .eq('server_id', TARGET_SERVER_ID) // Фильтр по ID сервера
+            .eq('server_id', TARGET_SERVER_ID)
             .order('date', { ascending: false })
             .limit(7);
 
@@ -56,11 +55,10 @@ async function fetchChartData() {
             chartData.week.data = weekData.map(item => item.count || 0);
         }
 
-        // --- ИЗМЕНЕНО: Добавлен фильтр .eq('server_id', TARGET_SERVER_ID) ---
         let { data: monthData, error: monthError } = await supabaseClient
             .from('message_stats_daily')
             .select('date, count')
-            .eq('server_id', TARGET_SERVER_ID) // Фильтр по ID сервера
+            .eq('server_id', TARGET_SERVER_ID)
             .order('date', { ascending: false })
             .limit(30);
 
@@ -172,10 +170,13 @@ function updateChart() {
 
 function updateCounters(data) {
     if (!data) {
-        ['count-today', 'count-yesterday', 'count-week', 'count-month', 'last-update-time'].forEach(id => {
+        ['count-today', 'count-yesterday', 'count-week', 'count-month'].forEach(id => {
             const el = document.getElementById(id);
-            if (el) el.textContent = 'Ошибка';
+            if (el) {
+                el.innerHTML = `<div class="loader"></div>`; // Показываем лоадер или 0
+            }
         });
+        document.getElementById('last-update-time').textContent = 'Нет данных';
         return;
     }
     function animateValue(element, start, end, duration) {
@@ -206,15 +207,16 @@ function updateCounters(data) {
 
 async function fetchMessageCounts() {
     try {
-        // --- ИЗМЕНЕНО: Добавлен фильтр .eq() и .single() для получения одной записи ---
+        // --- ИСПРАВЛЕНО: .single() заменено на .maybeSingle() ---
         const { data, error } = await supabaseClient
             .from('message_counts')
             .select('*')
-            .eq('server_id', TARGET_SERVER_ID) // Фильтруем по ID сервера
-            .single(); // Указываем, что ожидаем только одну запись
+            .eq('server_id', TARGET_SERVER_ID)
+            .maybeSingle(); // Ожидает одну или ноль строк, не выдавая ошибку при нуле
 
         if (error) throw error;
-        updateCounters(data);
+
+        updateCounters(data); // data будет null, если записей нет, и updateCounters это обработает
 
     } catch (err) {
         console.error('Ошибка при получении данных из Supabase:', err);
@@ -259,7 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setInterval(() => {
             fetchMessageCounts();
             fetchChartData();
-        }, 5 * 60 * 1000); // Обновление каждые 5 минут
+        }, 30 * 1000); // Обновление каждые 30 секунд для более быстрой проверки
     } catch (err) {
         console.error('Ошибка при инициализации Supabase:', err);
         document.querySelector('.container').innerHTML = `<div class="error">Ошибка при подключении к базе данных.</div>`;
