@@ -10,10 +10,8 @@ let chartData = {
 };
 let currentChartPeriod = 'week';
 
-function getCurrentTheme() {
-    return document.documentElement.getAttribute('data-theme') || 'light';
-}
-
+// --- Функции для форматирования и тем (без изменений) ---
+function getCurrentTheme() { return document.documentElement.getAttribute('data-theme') || 'light'; }
 function getThemeColors() {
     const isDarkTheme = getCurrentTheme() === 'dark';
     return {
@@ -24,11 +22,7 @@ function getThemeColors() {
         tooltipBackground: isDarkTheme ? 'rgba(59, 66, 82, 0.9)' : 'rgba(46, 52, 64, 0.9)'
     };
 }
-
-function formatNumber(num) {
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-}
-
+function formatNumber(num) { return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " "); }
 function formatDateTime(isoString) {
     if (!isoString) return 'Н/Д';
     const date = new Date(isoString);
@@ -38,52 +32,34 @@ function formatDateTime(isoString) {
     }).format(date);
 }
 
+// --- Функции для графика (без изменений) ---
 async function fetchChartData() {
     try {
-        let { data: weekData, error: weekError } = await supabaseClient
-            .from('message_stats_daily')
-            .select('date, count')
-            .eq('server_id', TARGET_SERVER_ID)
-            .order('date', { ascending: false })
-            .limit(7);
-
+        let { data: weekData, error: weekError } = await supabaseClient.from('message_stats_daily').select('date, count').eq('server_id', TARGET_SERVER_ID).order('date', { ascending: false }).limit(7);
         if (weekError) throw weekError;
-
         if (weekData && weekData.length > 0) {
             weekData.reverse();
             chartData.week.labels = weekData.map(item => new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short' }).format(new Date(item.date)));
             chartData.week.data = weekData.map(item => item.count || 0);
         }
-
-        let { data: monthData, error: monthError } = await supabaseClient
-            .from('message_stats_daily')
-            .select('date, count')
-            .eq('server_id', TARGET_SERVER_ID)
-            .order('date', { ascending: false })
-            .limit(30);
-
+        let { data: monthData, error: monthError } = await supabaseClient.from('message_stats_daily').select('date, count').eq('server_id', TARGET_SERVER_ID).order('date', { ascending: false }).limit(30);
         if (monthError) throw monthError;
-
         if (monthData && monthData.length > 0) {
             monthData.reverse();
             chartData.month.labels = monthData.map(item => new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short' }).format(new Date(item.date)));
             chartData.month.data = monthData.map(item => item.count || 0);
         }
-
         if (!weekData || weekData.length === 0) {
             console.log("Данных для графика нет, генерирую демо-данные.");
             generateDemoData();
         }
-
         updateChart();
-
     } catch (err) {
         console.error('Ошибка при получении данных для графика:', err);
         generateDemoData();
         updateChart();
     }
 }
-
 function generateDemoData() {
     const today = new Date();
     chartData.week.labels = [];
@@ -103,13 +79,12 @@ function generateDemoData() {
         chartData.month.data.push(Math.floor(Math.random() * 100) + 20);
     }
 }
-
 function updateChart() {
     const ctx = document.getElementById('activity-chart').getContext('2d');
     const colors = getThemeColors();
     if (activityChart) activityChart.destroy();
     const data = chartData[currentChartPeriod];
-    const maxValue = Math.max(...data.data);
+    const maxValue = Math.max(...data.data, 0); // Добавлено 0 для избежания ошибки с пустым массивом
     activityChart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -134,7 +109,7 @@ function updateChart() {
         },
         options: {
             responsive: true, maintainAspectRatio: false,
-            animation: { duration: 2000, easing: 'easeOutQuart' },
+            animation: { duration: 1500, easing: 'easeOutQuart' },
             interaction: { mode: 'nearest', axis: 'x', intersect: false },
             plugins: {
                 legend: { display: false },
@@ -150,33 +125,25 @@ function updateChart() {
                 y: {
                     beginAtZero: true, suggestedMax: maxValue * 1.1,
                     grid: { color: colors.gridColor, drawBorder: false },
-                    ticks: {
-                        font: { family: 'Montserrat', size: 11 },
-                        color: colors.textColor, padding: 10,
-                        callback: value => formatNumber(value)
-                    }
+                    ticks: { font: { family: 'Montserrat', size: 11 }, color: colors.textColor, padding: 10, callback: value => formatNumber(value) }
                 },
                 x: {
                     grid: { display: false, drawBorder: false },
-                    ticks: {
-                        font: { family: 'Montserrat', size: 11 },
-                        color: colors.textColor, padding: 10
-                    }
+                    ticks: { font: { family: 'Montserrat', size: 11 }, color: colors.textColor, padding: 10 }
                 }
             }
         }
     });
 }
 
+// --- Функция обновления счетчиков (без изменений) ---
 function updateCounters(data) {
     if (!data) {
         ['count-today', 'count-yesterday', 'count-week', 'count-month'].forEach(id => {
             const el = document.getElementById(id);
-            if (el) {
-                el.innerHTML = `<div class="loader"></div>`; // Показываем лоадер или 0
-            }
+            if (el) el.innerHTML = `<div class="loader"></div>`;
         });
-        document.getElementById('last-update-time').textContent = 'Нет данных';
+        document.getElementById('last-update-time').textContent = 'Ожидание данных...';
         return;
     }
     function animateValue(element, start, end, duration) {
@@ -184,7 +151,8 @@ function updateCounters(data) {
         const step = (timestamp) => {
             if (!startTimestamp) startTimestamp = timestamp;
             const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-            element.textContent = formatNumber(Math.floor(progress * (end - start) + start));
+            const currentValue = Math.floor(progress * (end - start) + start);
+            element.textContent = formatNumber(currentValue);
             if (progress < 1) window.requestAnimationFrame(step);
         };
         window.requestAnimationFrame(step);
@@ -195,35 +163,63 @@ function updateCounters(data) {
         'count-week': data.count_week || 0,
         'count-month': data.count_month || 0
     };
-    Object.entries(elements).forEach(([id, value], index) => {
+    Object.entries(elements).forEach(([id, value]) => {
         const el = document.getElementById(id);
         if (el) {
-            el.innerHTML = '0';
-            setTimeout(() => animateValue(el, 0, value, 1500), 100 + index * 200);
+            const startValue = parseInt(el.textContent.replace(/\s/g, '')) || 0;
+            if (startValue !== value) {
+                 animateValue(el, startValue, value, 1000);
+            } else if (!el.textContent) {
+                 animateValue(el, 0, value, 1000);
+            }
         }
     });
     document.getElementById('last-update-time').textContent = formatDateTime(data.last_updated);
 }
 
-async function fetchMessageCounts() {
+// --- Загрузка данных один раз при старте ---
+async function fetchInitialMessageCounts() {
     try {
-        // --- ИСПРАВЛЕНО: .single() заменено на .maybeSingle() ---
         const { data, error } = await supabaseClient
             .from('message_counts')
             .select('*')
             .eq('server_id', TARGET_SERVER_ID)
-            .maybeSingle(); // Ожидает одну или ноль строк, не выдавая ошибку при нуле
-
+            .maybeSingle();
         if (error) throw error;
-
-        updateCounters(data); // data будет null, если записей нет, и updateCounters это обработает
-
+        updateCounters(data);
     } catch (err) {
-        console.error('Ошибка при получении данных из Supabase:', err);
+        console.error('Ошибка при первичной загрузке данных:', err);
         updateCounters(null);
     }
 }
 
+// --- Подписка на живые обновления ---
+function subscribeToRealtimeChanges() {
+    const channel = supabaseClient
+        .channel('message-counts-updates')
+        .on(
+            'postgres_changes',
+            {
+                event: '*', // Слушаем все события: INSERT, UPDATE
+                schema: 'public',
+                table: 'message_counts',
+                filter: `server_id=eq.${TARGET_SERVER_ID}` // Только для нашего сервера
+            },
+            (payload) => {
+                console.log('Получено обновление в реальном времени:', payload);
+                updateCounters(payload.new);
+                fetchChartData(); // Обновляем график
+            }
+        )
+        .subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+                console.log('Подписка на обновления в реальном времени активна.');
+            }
+        });
+    return channel;
+}
+
+// --- Функции настройки интерфейса (без изменений) ---
 function setupChartTabs() {
     const tabs = document.querySelectorAll('.chart-tab');
     tabs.forEach(tab => {
@@ -235,7 +231,6 @@ function setupChartTabs() {
         });
     });
 }
-
 function setupThemeChangeListener() {
     const observer = new MutationObserver(mutations => {
         mutations.forEach(mutation => {
@@ -245,6 +240,7 @@ function setupThemeChangeListener() {
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 }
 
+// --- Основная логика при загрузке страницы ---
 document.addEventListener('DOMContentLoaded', () => {
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY || SUPABASE_URL.includes('ВАШ')) {
         const message = 'Необходимо указать URL и ключ Supabase в файле script.js';
@@ -254,14 +250,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     try {
         supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
         setupChartTabs();
         setupThemeChangeListener();
-        fetchMessageCounts();
+        
+        // 1. Загружаем начальные данные
+        fetchInitialMessageCounts();
         fetchChartData();
-        setInterval(() => {
-            fetchMessageCounts();
-            fetchChartData();
-        }, 30 * 1000); // Обновление каждые 30 секунд для более быстрой проверки
+        
+        // 2. Подписываемся на живые обновления
+        subscribeToRealtimeChanges();
+
     } catch (err) {
         console.error('Ошибка при инициализации Supabase:', err);
         document.querySelector('.container').innerHTML = `<div class="error">Ошибка при подключении к базе данных.</div>`;
